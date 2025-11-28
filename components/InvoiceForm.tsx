@@ -4,7 +4,6 @@ import { Invoice, InvoiceItem, InvoiceStatus, Client } from '../types';
 import { Button } from './Button';
 import { Input } from './Input';
 import { Plus, Trash2, Save, ArrowLeft, Eye, Users, Search, X } from 'lucide-react';
-import { AIHelper } from './AIHelper';
 import { getClients } from '../services/storageService';
 import { generateId } from '../services/utils';
 
@@ -306,10 +305,6 @@ export const InvoiceForm: React.FC<Props> = ({ userId, initialData, onSave, onCa
                                        value={item.description}
                                        onChange={e => updateItem(item.id, 'description', e.target.value)}
                                        placeholder="Descrição do serviço..."
-                                   />
-                                   <AIHelper 
-                                     currentText={item.description}
-                                     onApply={(newText) => updateItem(item.id, 'description', newText)}
                                    />
                                </div>
                                <div className="md:col-span-2">
