@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Accountant, ChatMessage } from '../types';
 import { Button } from './Button';
 import { Send, Phone, Paperclip, CheckCheck } from 'lucide-react';
 import { getAssignedAccountant, getSupportMessages } from '../services/storageService';
+import { generateId } from '../services/utils';
 
 export const SupportView: React.FC = () => {
   const [accountant, setAccountant] = useState<Accountant | null>(null);
@@ -24,7 +26,7 @@ export const SupportView: React.FC = () => {
     if (!inputText.trim()) return;
 
     const newMessage: ChatMessage = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       senderId: 'user',
       text: inputText,
       timestamp: new Date().toISOString(),
@@ -37,7 +39,7 @@ export const SupportView: React.FC = () => {
     // Simulate accountant reply
     setTimeout(() => {
         const reply: ChatMessage = {
-            id: crypto.randomUUID(),
+            id: generateId(),
             senderId: 'accountant',
             text: 'Recebi sua mensagem! Vou analisar e te respondo em instantes.',
             timestamp: new Date().toISOString(),

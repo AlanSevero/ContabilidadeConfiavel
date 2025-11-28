@@ -5,6 +5,7 @@ import { getInvoices, saveDocument } from '../services/storageService';
 import { Button } from './Button';
 import { Calculator, ArrowRight, TrendingUp, AlertCircle, CheckCircle2, FileText, Info, Settings, Percent, ChevronDown, ChevronUp, AlertTriangle, MapPin, Table as TableIcon, HelpCircle } from 'lucide-react';
 import { getCurrentUser } from '../services/authService';
+import { generateId } from '../services/utils';
 
 export const TaxesView: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toISOString().slice(0, 7));
@@ -153,7 +154,7 @@ export const TaxesView: React.FC = () => {
              : `DARF - Impostos Federais (Presumido) - ${month}/${year}`;
 
           const newDoc: AccountingDocument = {
-              id: crypto.randomUUID(),
+              id: generateId(),
               title: docTitle,
               type: 'tax',
               date: dueDate.toISOString(),

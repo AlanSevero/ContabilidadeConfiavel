@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { Client } from '../types';
 import { Button } from './Button';
 import { Input } from './Input';
 import { Save, ArrowLeft, Building2 } from 'lucide-react';
+import { generateId } from '../services/utils';
 
 interface ClientFormProps {
   userId: string;
@@ -26,7 +28,7 @@ export const ClientForm: React.FC<ClientFormProps> = ({ userId, initialData, onS
     if (initialData) {
       setFormData(initialData);
     } else {
-      setFormData(prev => ({ ...prev, id: crypto.randomUUID() }));
+      setFormData(prev => ({ ...prev, id: generateId() }));
     }
   }, [initialData]);
 

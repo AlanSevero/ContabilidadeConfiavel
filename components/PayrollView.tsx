@@ -5,6 +5,7 @@ import { getEmployees, saveEmployee, deleteEmployee, getAssignedAccountant } fro
 import { Button } from './Button';
 import { Input } from './Input';
 import { UsersRound, Plus, Trash2, Edit, Save, DollarSign, Download, CalendarCheck } from 'lucide-react';
+import { generateId } from '../services/utils';
 
 export const PayrollView: React.FC<{ userId: string }> = ({ userId }) => {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -21,7 +22,7 @@ export const PayrollView: React.FC<{ userId: string }> = ({ userId }) => {
         setCurrentEmployee(employee);
     } else {
         setCurrentEmployee({
-            id: crypto.randomUUID(),
+            id: generateId(),
             userId,
             name: '',
             role: '',

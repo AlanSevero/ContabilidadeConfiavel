@@ -6,6 +6,7 @@ import { Input } from './Input';
 import { Plus, Trash2, Save, ArrowLeft, Eye, Users, Search, X } from 'lucide-react';
 import { AIHelper } from './AIHelper';
 import { getClients } from '../services/storageService';
+import { generateId } from '../services/utils';
 
 interface Props {
   userId: string;
@@ -22,7 +23,7 @@ export const InvoiceForm: React.FC<Props> = ({ userId, initialData, onSave, onCa
 
   // Default State
   const [formData, setFormData] = useState<Invoice>({
-    id: crypto.randomUUID(),
+    id: generateId(),
     userId: userId,
     number: '',
     date: new Date().toISOString().split('T')[0],
@@ -93,7 +94,7 @@ export const InvoiceForm: React.FC<Props> = ({ userId, initialData, onSave, onCa
   const addItem = () => {
     setFormData(prev => ({
       ...prev,
-      items: [...prev.items, { id: crypto.randomUUID(), description: '', quantity: 1, unitPrice: 0 }]
+      items: [...prev.items, { id: generateId(), description: '', quantity: 1, unitPrice: 0 }]
     }));
   };
 

@@ -1,8 +1,10 @@
+
 import React, { useState } from 'react';
 import { Partner } from '../types';
 import { Button } from './Button';
 import { Input } from './Input';
 import { Plus, Trash2, Edit, Save, X, UserCheck, Briefcase } from 'lucide-react';
+import { generateId } from '../services/utils';
 
 interface PartnersListProps {
   partners: Partner[];
@@ -20,7 +22,7 @@ export const PartnersList: React.FC<PartnersListProps> = ({ partners, userId, on
       setEditingPartner(partner);
     } else {
       setEditingPartner({
-        id: crypto.randomUUID(),
+        id: generateId(),
         userId,
         name: '',
         taxId: '',

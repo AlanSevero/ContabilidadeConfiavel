@@ -1,4 +1,6 @@
+
 import { User } from '../types';
+import { generateId } from './utils';
 
 const USERS_KEY = 'notas_smart_users';
 const SESSION_KEY = 'notas_smart_session';
@@ -15,7 +17,7 @@ export const register = (name: string, email: string, password: string): User | 
   }
   
   const newUser: User = {
-    id: crypto.randomUUID(),
+    id: generateId(),
     name,
     email,
     password

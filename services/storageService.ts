@@ -1,5 +1,6 @@
 
 import { Invoice, InvoiceStatus, Client, Partner, Accountant, AccountingDocument, ChatMessage, PlanTier, User, TaxRegime, Employee, Product, ProductSale } from '../types';
+import { generateId } from './utils';
 
 const INVOICES_KEY = 'notas_fiscais_db_v1';
 const CLIENTS_KEY = 'notas_clients_db_v1';
@@ -227,7 +228,7 @@ export const seedData = (userId: string) => {
   // Only seed if this user has no invoices
   if (getInvoices(userId).length === 0) {
     const mockInvoice: Invoice = {
-        id: crypto.randomUUID(),
+        id: generateId(),
         userId: userId,
         number: '001/2024',
         date: new Date().toISOString(),
@@ -256,7 +257,7 @@ export const seedData = (userId: string) => {
   // Seed a client if none exist
   if (getClients(userId).length === 0) {
       const mockClient: Client = {
-          id: crypto.randomUUID(),
+          id: generateId(),
           userId: userId,
           name: 'Cliente Exemplo S.A.',
           taxId: '98.765.432/0001-01',
@@ -270,9 +271,9 @@ export const seedData = (userId: string) => {
   // Seed Products if none exist
   if (getProducts(userId).length === 0) {
     const products: Product[] = [
-      { id: crypto.randomUUID(), userId, name: 'Notebook Gamer', sku: 'NB-001', costPrice: 3500, salePrice: 5000, currentStock: 5, minStock: 2, category: 'Eletrônicos' },
-      { id: crypto.randomUUID(), userId, name: 'Mouse Sem Fio', sku: 'MS-002', costPrice: 40, salePrice: 90, currentStock: 20, minStock: 5, category: 'Acessórios' },
-      { id: crypto.randomUUID(), userId, name: 'Monitor 24"', sku: 'MN-003', costPrice: 600, salePrice: 950, currentStock: 1, minStock: 3, category: 'Eletrônicos' }, // Low stock example
+      { id: generateId(), userId, name: 'Notebook Gamer', sku: 'NB-001', costPrice: 3500, salePrice: 5000, currentStock: 5, minStock: 2, category: 'Eletrônicos' },
+      { id: generateId(), userId, name: 'Mouse Sem Fio', sku: 'MS-002', costPrice: 40, salePrice: 90, currentStock: 20, minStock: 5, category: 'Acessórios' },
+      { id: generateId(), userId, name: 'Monitor 24"', sku: 'MN-003', costPrice: 600, salePrice: 950, currentStock: 1, minStock: 3, category: 'Eletrônicos' }, // Low stock example
     ];
     products.forEach(p => saveProduct(p));
   }

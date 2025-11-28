@@ -1,8 +1,27 @@
+
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Safe access to process.env to prevent "process is not defined" crashes in browser
+const getApiKey = () => {
+  try {
+    // @ts-ignore
+    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+      // @ts-ignore
+      return process.env.API_KEY;
+    }
+  } catch (e) {
+    console.warn("API Key access failed", e);
+  }
+  return '';
+};
+
+const apiKey = getApiKey();
+// Only initialize AI if key exists to prevent immediate crash
+const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
 export const enhanceDescription = async (rawText: string): Promise<string> => {
+  if (!ai) return rawText;
+  
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
@@ -19,6 +38,8 @@ export const enhanceDescription = async (rawText: string): Promise<string> => {
 };
 
 export const suggestTaxCategory = async (description: string): Promise<string> => {
+  if (!ai) return 'Geral';
+  
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',

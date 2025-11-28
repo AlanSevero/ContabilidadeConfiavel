@@ -16,10 +16,10 @@ import {
   AlertTriangle, 
   DollarSign, 
   Save, 
-  X,
-  ArrowRight
+  X
 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { generateId } from '../services/utils';
 
 export const FinancialView: React.FC<{ userId: string }> = ({ userId }) => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'inventory' | 'sales'>('dashboard');
@@ -49,7 +49,7 @@ export const FinancialView: React.FC<{ userId: string }> = ({ userId }) => {
       setEditingProduct(product);
     } else {
       setEditingProduct({
-        id: crypto.randomUUID(),
+        id: generateId(),
         userId,
         name: '',
         sku: '',
@@ -92,7 +92,7 @@ export const FinancialView: React.FC<{ userId: string }> = ({ userId }) => {
 
       // Create Sale Record
       const newSale: ProductSale = {
-        id: crypto.randomUUID(),
+        id: generateId(),
         userId,
         productId: product.id,
         productName: product.name,
