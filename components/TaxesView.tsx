@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { Invoice, InvoiceStatus, TaxRegime, AccountingDocument } from '../types';
 import { getInvoices, saveDocument } from '../services/storageService';
 import { Button } from './Button';
-import { Calculator, ArrowRight, TrendingUp, AlertCircle, CheckCircle2, FileText, Info, Settings, Percent, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
+import { Calculator, ArrowRight, TrendingUp, AlertCircle, CheckCircle2, FileText, Info, Settings, Percent, ChevronDown, ChevronUp, AlertTriangle, MapPin, Table as TableIcon, HelpCircle } from 'lucide-react';
 import { getCurrentUser } from '../services/authService';
 
 export const TaxesView: React.FC = () => {
@@ -13,14 +14,43 @@ export const TaxesView: React.FC = () => {
   const [calculating, setCalculating] = useState(false);
   const [generated, setGenerated] = useState(false);
   const [showSettings, setShowSettings] = useState(true);
+  const [showSimplesDetails, setShowSimplesDetails] = useState(false);
 
   // Presumido Rates State (Defaults based on Service industry standard)
   const [issRate, setIssRate] = useState(5.00);
   const [pisCofinsRate, setPisCofinsRate] = useState(3.65);
   const [irpjRate, setIrpjRate] = useState(4.80); // Presumed base 32% * 15%
   const [csllRate, setCsllRate] = useState(2.88); // Presumed base 32% * 9%
+  
+  const [selectedCity, setSelectedCity] = useState('custom');
 
   const user = getCurrentUser();
+
+  // Mock City Data for ISS
+  const cities = [
+      { id: 'sp', name: 'São Paulo - SP', rate: 2.9 },
+      { id: 'rj', name: 'Rio de Janeiro - RJ', rate: 5.0 },
+      { id: 'bh', name: 'Belo Horizonte - MG', rate: 3.0 },
+      { id: 'df', name: 'Brasília - DF', rate: 5.0 },
+      { id: 'cur', name: 'Curitiba - PR', rate: 5.0 },
+      { id: 'sal', name: 'Salvador - BA', rate: 3.0 },
+      { id: 'poa', name: 'Porto Alegre - RS', rate: 5.0 },
+      { id: 'man', name: 'Manaus - AM', rate: 5.0 },
+      { id: 'rec', name: 'Recife - PE', rate: 5.0 },
+      { id: 'for', name: 'Fortaleza - CE', rate: 5.0 },
+      { id: 'goi', name: 'Goiânia - GO', rate: 5.0 },
+      { id: 'custom', name: 'Outra Cidade / Personalizado', rate: 5.0 }
+  ];
+
+  // Simples Nacional Tiers (Anexo III - Services - Real 2024 Data)
+  const SIMPLES_TIERS = [
+      { id: 1, limit: 180000, nominalRate: 0.06, deduction: 0, label: '1ª Faixa', range: 'Até R$ 180.000,00' },
+      { id: 2, limit: 360000, nominalRate: 0.112, deduction: 9360, label: '2ª Faixa', range: 'De R$ 180.000,01 a R$ 360.000,00' },
+      { id: 3, limit: 720000, nominalRate: 0.135, deduction: 17640, label: '3ª Faixa', range: 'De R$ 360.000,01 a R$ 720.000,00' },
+      { id: 4, limit: 1800000, nominalRate: 0.16, deduction: 35640, label: '4ª Faixa', range: 'De R$ 720.000,01 a R$ 1.800.000,00' },
+      { id: 5, limit: 3600000, nominalRate: 0.21, deduction: 125640, label: '5ª Faixa', range: 'De R$ 1.800.000,01 a R$ 3.600.000,00' },
+      { id: 6, limit: 4800000, nominalRate: 0.33, deduction: 648000, label: '6ª Faixa', range: 'De R$ 3.600.000,01 a R$ 4.800.000,00' }
+  ];
 
   useEffect(() => {
     if (user) {
@@ -49,31 +79,48 @@ export const TaxesView: React.FC = () => {
     }
   }, [selectedMonth, user]);
 
+  const handleCityChange = (cityId: string) => {
+      setSelectedCity(cityId);
+      const city = cities.find(c => c.id === cityId);
+      if (city && cityId !== 'custom') {
+          setIssRate(city.rate);
+      }
+  };
+
   // --- Logic for Simples Nacional (Simplified Anexo III - Services) ---
   const getSimplesDetails = (revenue: number) => {
-      // Logic based on simplified monthly revenue tiers to simulate RBT12 (Revenue Bruta Total 12 meses)
-      // Monthly 15k * 12 = 180k (Limit of 1st Tier)
+      // Annualized revenue projection for demo purposes (Current Month * 12)
+      // In a real app, this would fetch RBT12 (Revenue of last 12 months)
+      const annualized = revenue * 12;
       
-      if (revenue === 0) return { rate: 0, tier: 'Sem Faturamento', deduction: 0 };
+      if (revenue === 0) return { effectiveRate: 0, nominalRate: 0, deduction: 0, tier: 'Sem Faturamento', range: '-', tierId: 0, annualized };
       
-      if (revenue <= 15000) return { rate: 0.06, tier: 'Faixa 1: 6% (Até R$ 180k/ano)', deduction: 0 };
+      const activeTier = SIMPLES_TIERS.find(t => annualized <= t.limit) || SIMPLES_TIERS[SIMPLES_TIERS.length - 1];
+
+      // Formula: ((RBT12 * NominalRate) - Deduction) / RBT12
+      let effectiveRate = ((annualized * activeTier.nominalRate) - activeTier.deduction) / annualized;
       
-      if (revenue <= 30000) return { rate: 0.112, tier: 'Faixa 2: 11.2% (Até R$ 360k/ano)', deduction: 0 }; 
-      
-      if (revenue <= 60000) return { rate: 0.135, tier: 'Faixa 3: 13.5% (Até R$ 720k/ano)', deduction: 0 };
-      
-      if (revenue <= 150000) return { rate: 0.16, tier: 'Faixa 4: 16% (Até R$ 1.8M/ano)', deduction: 0 };
-      
-      return { rate: 0.21, tier: 'Faixa 5: 21% (Acima de R$ 1.8M/ano)', deduction: 0 };
+      // Effective rate cannot be negative (in rare edge cases of low RBT12 projection)
+      if (effectiveRate < 0) effectiveRate = 0;
+
+      return { 
+          effectiveRate,
+          nominalRate: activeTier.nominalRate,
+          deduction: activeTier.deduction,
+          tier: `${activeTier.label} (Anexo III)`, 
+          range: activeTier.range,
+          tierId: activeTier.id,
+          annualized
+      };
   };
 
   const calculateTax = (regime: TaxRegime, revenue: number) => {
       if (regime === 'simples') {
-          const { rate } = getSimplesDetails(revenue);
-          return revenue * rate;
+          const { effectiveRate } = getSimplesDetails(revenue);
+          return revenue * effectiveRate;
       }
       if (regime === 'presumido') {
-          // Calculation includes the manually entered ISS rate
+          // Calculation includes the manually entered ISS rate and PIS/COFINS
           const totalRate = (issRate + pisCofinsRate + irpjRate + csllRate) / 100;
           return revenue * totalRate;
       }
@@ -178,11 +225,11 @@ export const TaxesView: React.FC = () => {
 
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  {/* Simples Nacional Option */}
-                 <button 
-                    onClick={() => setSimulatedRegime('simples')}
-                    className={`p-4 rounded-xl border-2 text-left transition-all relative overflow-hidden flex flex-col justify-between h-full ${simulatedRegime === 'simples' ? 'border-primary-500 bg-primary-50 shadow-md ring-1 ring-primary-500' : 'border-gray-100 hover:border-gray-200'}`}
-                 >
-                    <div>
+                 <div className={`rounded-xl border-2 transition-all relative overflow-hidden flex flex-col justify-between h-full ${simulatedRegime === 'simples' ? 'border-primary-500 bg-primary-50 shadow-md ring-1 ring-primary-500' : 'border-gray-100 hover:border-gray-200'}`}>
+                    <button 
+                        onClick={() => setSimulatedRegime('simples')}
+                        className="p-4 text-left w-full h-full"
+                    >
                         <div className="flex justify-between items-start mb-2">
                             <span className="font-bold text-gray-900">Simples Nacional</span>
                             {simulatedRegime === 'simples' && <div className="w-5 h-5 rounded-full bg-primary-500 text-white flex items-center justify-center"><CheckCircle2 className="w-3 h-3" /></div>}
@@ -192,19 +239,78 @@ export const TaxesView: React.FC = () => {
                         </div>
                         <div className="text-xs text-gray-600 space-y-1 mt-2 mb-3">
                             <div className="flex justify-between">
-                                <span>Alíquota Nominal:</span>
-                                <span className="font-bold text-primary-700">{(simplesDetails.rate * 100).toFixed(2)}%</span>
+                                <span>Alíquota Efetiva:</span>
+                                <span className="font-bold text-primary-700">{(simplesDetails.effectiveRate * 100).toFixed(2)}%</span>
                             </div>
                             <div className="flex flex-col gap-1 mt-1">
-                                <span className="text-gray-500">Enquadramento:</span>
-                                <span className="font-medium text-gray-900 bg-gray-100 px-2 py-1 rounded w-fit">{simplesDetails.tier}</span>
+                                <span className="text-gray-500">Enquadramento (Anexo III):</span>
+                                <div className="flex flex-col">
+                                    <span className="font-medium text-gray-900 bg-gray-100 px-2 py-1 rounded w-fit">{simplesDetails.tier}</span>
+                                    <span className="text-[10px] text-gray-400 mt-0.5">{simplesDetails.range}</span>
+                                </div>
                             </div>
                         </div>
+                    </button>
+                    
+                    {/* Expandable Breakdown Button */}
+                    <div className="border-t border-primary-100/50 bg-white/40">
+                        <button 
+                           onClick={(e) => { e.stopPropagation(); setShowSimplesDetails(!showSimplesDetails); setSimulatedRegime('simples'); }}
+                           className="w-full py-2 flex items-center justify-center gap-1 text-xs font-bold text-primary-600 hover:bg-primary-50 transition-colors"
+                        >
+                            {showSimplesDetails ? <ChevronUp className="w-3 h-3" /> : <TableIcon className="w-3 h-3" />}
+                            {showSimplesDetails ? 'Ocultar Tabela' : 'Entenda o Cálculo'}
+                        </button>
                     </div>
-                    <div className={`mt-auto pt-3 border-t text-xs leading-relaxed ${simulatedRegime === 'simples' ? 'border-primary-200 text-primary-800' : 'border-gray-100 text-gray-500'}`}>
-                        <strong>Por que escolher?</strong> Ideal para faturamentos iniciais. Unifica 8 tributos em uma única guia (DAS), simplificando a gestão.
-                    </div>
-                 </button>
+
+                    {/* Breakdown Content */}
+                    {showSimplesDetails && (
+                        <div className="p-4 border-t border-primary-200 bg-white animate-fade-in-down">
+                            <div className="mb-4 p-3 bg-blue-50 rounded-lg text-xs text-blue-900 border border-blue-100">
+                                <div className="flex items-center gap-1 font-bold mb-2 text-blue-700">
+                                    <HelpCircle className="w-3 h-3" />
+                                    Fórmula da Alíquota Efetiva:
+                                </div>
+                                <div className="font-mono bg-white p-2 rounded border border-blue-100 text-center mb-2 text-[10px] sm:text-xs">
+                                    (RBT12 × Alíquota Nominal) - Dedução<br/>
+                                    ────────────────────────────────────<br/>
+                                    RBT12
+                                </div>
+                                <p className="mb-2 leading-relaxed">
+                                    <strong>RBT12 (Receita Bruta 12 meses):</strong> {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(simplesDetails.annualized)}<br/>
+                                    <strong>Alíquota Nominal da Faixa:</strong> {(simplesDetails.nominalRate * 100).toFixed(2)}%<br/>
+                                    <strong>Parcela a Deduzir:</strong> {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(simplesDetails.deduction)}
+                                </p>
+                                <p className="text-right font-bold text-blue-700 border-t border-blue-200 pt-1">
+                                    = {(simplesDetails.effectiveRate * 100).toFixed(4)}%
+                                </p>
+                            </div>
+
+                            <div className="overflow-hidden rounded-lg border border-gray-200">
+                                <table className="w-full text-[10px] md:text-xs">
+                                    <thead className="bg-gray-100 text-gray-500">
+                                        <tr>
+                                            <th className="px-2 py-1 text-left">Faixa</th>
+                                            <th className="px-2 py-1 text-left">Limite 12 Meses</th>
+                                            <th className="px-2 py-1 text-center">Aliq. Nominal</th>
+                                            <th className="px-2 py-1 text-right">Dedução</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {SIMPLES_TIERS.map((tier) => (
+                                            <tr key={tier.id} className={`${simplesDetails.tierId === tier.id ? 'bg-primary-50 text-primary-900 font-bold border-l-4 border-l-primary-500' : 'text-gray-600'}`}>
+                                                <td className="px-2 py-1.5">{tier.id}ª</td>
+                                                <td className="px-2 py-1.5">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(tier.limit)}</td>
+                                                <td className="px-2 py-1.5 text-center">{(tier.nominalRate * 100).toFixed(2)}%</td>
+                                                <td className="px-2 py-1.5 text-right">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(tier.deduction)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+                 </div>
 
                  {/* Lucro Presumido Option */}
                  <button 
@@ -250,88 +356,135 @@ export const TaxesView: React.FC = () => {
                      </button>
                      
                      {showSettings && (
-                         <div className="p-4 bg-white border-t border-gray-100 grid grid-cols-2 md:grid-cols-4 gap-3 animate-fade-in-down">
-                            {/* IRPJ */}
-                            <div className="bg-gray-50 p-2.5 rounded-md border border-gray-200 flex flex-col justify-between hover:border-primary-300 transition-colors">
-                                <label className="text-[10px] uppercase font-bold text-gray-500 mb-1">IRPJ</label>
-                                <div className="flex items-center">
-                                    <input 
-                                        type="number" 
-                                        step="0.01" 
-                                        value={irpjRate} 
-                                        onChange={e => setIrpjRate(parseFloat(e.target.value) || 0)}
-                                        className="w-full bg-transparent text-sm font-bold text-gray-900 outline-none"
-                                    />
-                                    <Percent className="w-3 h-3 text-gray-400" />
-                                </div>
-                            </div>
-
-                            {/* CSLL */}
-                            <div className="bg-gray-50 p-2.5 rounded-md border border-gray-200 flex flex-col justify-between hover:border-primary-300 transition-colors">
-                                <label className="text-[10px] uppercase font-bold text-gray-500 mb-1">CSLL</label>
-                                <div className="flex items-center">
-                                    <input 
-                                        type="number" 
-                                        step="0.01" 
-                                        value={csllRate} 
-                                        onChange={e => setCsllRate(parseFloat(e.target.value) || 0)}
-                                        className="w-full bg-transparent text-sm font-bold text-gray-900 outline-none"
-                                    />
-                                    <Percent className="w-3 h-3 text-gray-400" />
-                                </div>
-                            </div>
-
-                            {/* PIS/COFINS */}
-                            <div className="bg-gray-50 p-2.5 rounded-md border border-gray-200 flex flex-col justify-between hover:border-primary-300 transition-colors">
-                                <div className="flex justify-between items-start">
-                                    <label className="text-[10px] uppercase font-bold text-gray-500 mb-1">PIS/COFINS</label>
-                                    <div title="Geralmente 3,65% (0,65% PIS + 3,00% COFINS) no regime cumulativo">
-                                        <Info className="w-3 h-3 text-gray-400" />
+                         <div className="p-4 bg-white border-t border-gray-100 animate-fade-in-down">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                                {/* IRPJ */}
+                                <div className="bg-gray-50 p-2.5 rounded-md border border-gray-200 flex flex-col justify-between hover:border-primary-300 transition-colors">
+                                    <label className="text-[10px] uppercase font-bold text-gray-500 mb-1">IRPJ</label>
+                                    <div className="flex items-center">
+                                        <input 
+                                            type="number" 
+                                            step="0.01" 
+                                            value={irpjRate} 
+                                            onChange={e => setIrpjRate(parseFloat(e.target.value) || 0)}
+                                            className="w-full bg-transparent text-sm font-bold text-gray-900 outline-none"
+                                        />
+                                        <Percent className="w-3 h-3 text-gray-400" />
                                     </div>
                                 </div>
-                                <div className="flex items-center">
-                                    <input 
-                                        type="number" 
-                                        step="0.01" 
-                                        value={pisCofinsRate} 
-                                        onChange={e => setPisCofinsRate(parseFloat(e.target.value) || 0)}
-                                        className="w-full bg-transparent text-sm font-bold text-gray-900 outline-none"
-                                    />
-                                    <Percent className="w-3 h-3 text-gray-400" />
-                                </div>
-                                {pisCofinsRate !== 3.65 && (
-                                     <button 
-                                        onClick={() => setPisCofinsRate(3.65)}
-                                        className="text-[10px] text-blue-500 hover:underline mt-1 text-left w-full font-medium"
-                                     >
-                                        Retornar ao padrão (3,65%)
-                                     </button>
-                                )}
-                            </div>
 
-                            {/* ISS */}
-                            <div className="bg-primary-50 p-2.5 rounded-md border border-primary-200 flex flex-col justify-between">
-                                <div className="flex justify-between items-start">
-                                    <label className="text-[10px] uppercase font-bold text-primary-700 mb-1">ISS (Mun)</label>
-                                    <div title="Alíquota varia por município (2% a 5%)">
-                                        <Info className="w-3 h-3 text-primary-400" />
+                                {/* CSLL */}
+                                <div className="bg-gray-50 p-2.5 rounded-md border border-gray-200 flex flex-col justify-between hover:border-primary-300 transition-colors">
+                                    <label className="text-[10px] uppercase font-bold text-gray-500 mb-1">CSLL</label>
+                                    <div className="flex items-center">
+                                        <input 
+                                            type="number" 
+                                            step="0.01" 
+                                            value={csllRate} 
+                                            onChange={e => setCsllRate(parseFloat(e.target.value) || 0)}
+                                            className="w-full bg-transparent text-sm font-bold text-gray-900 outline-none"
+                                        />
+                                        <Percent className="w-3 h-3 text-gray-400" />
                                     </div>
                                 </div>
-                                <div className="flex items-center">
-                                    <input 
-                                        type="number" 
-                                        step="0.01" 
-                                        value={issRate} 
-                                        onChange={e => setIssRate(parseFloat(e.target.value) || 0)}
-                                        className="w-full bg-transparent text-sm font-bold text-primary-800 outline-none"
-                                    />
-                                    <Percent className="w-3 h-3 text-primary-600" />
+
+                                {/* PIS/COFINS Input Field */}
+                                <div className="bg-gray-50 p-2.5 rounded-md border border-gray-200 flex flex-col justify-between hover:border-primary-300 transition-colors">
+                                    <div className="flex justify-between items-start">
+                                        <label className="text-[10px] uppercase font-bold text-gray-500 mb-1">PIS/COFINS</label>
+                                        <div title="PIS + COFINS. Cumulativo: 3.65%. Não Cumulativo: 9.25%">
+                                            <Info className="w-3 h-3 text-gray-400" />
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <input 
+                                            type="number" 
+                                            step="0.01" 
+                                            value={pisCofinsRate} 
+                                            onChange={e => setPisCofinsRate(parseFloat(e.target.value) || 0)}
+                                            className="w-full bg-transparent text-sm font-bold text-gray-900 outline-none"
+                                        />
+                                        <Percent className="w-3 h-3 text-gray-400" />
+                                    </div>
+                                    <div className="flex gap-2 mt-1">
+                                        <button 
+                                            onClick={() => setPisCofinsRate(3.65)}
+                                            className={`text-[9px] font-medium ${pisCofinsRate === 3.65 ? 'text-blue-600 font-bold' : 'text-gray-400 hover:text-blue-500'}`}
+                                        >
+                                            Cumul. (3,65%)
+                                        </button>
+                                        <button 
+                                            onClick={() => setPisCofinsRate(9.25)}
+                                            className={`text-[9px] font-medium ${pisCofinsRate === 9.25 ? 'text-blue-600 font-bold' : 'text-gray-400 hover:text-blue-500'}`}
+                                        >
+                                            Não Cum. (9,25%)
+                                        </button>
+                                    </div>
                                 </div>
-                                {issRate > 5 && (
-                                    <p className="text-[10px] text-orange-600 mt-1 leading-tight font-medium">
-                                        Atenção: O teto usual do ISS é 5%. Verifique se está correto.
-                                    </p>
-                                )}
+
+                                {/* ISS - Municipal Config */}
+                                <div className="bg-primary-50 p-2.5 rounded-md border border-primary-200 flex flex-col justify-between">
+                                    <div className="flex justify-between items-start">
+                                        <label className="text-[10px] uppercase font-bold text-primary-700 mb-1">ISS (Mun)</label>
+                                        <div title="Alíquota varia por município">
+                                            <MapPin className="w-3 h-3 text-primary-400" />
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <input 
+                                            type="number" 
+                                            step="0.01" 
+                                            value={issRate} 
+                                            onChange={e => {
+                                                setIssRate(parseFloat(e.target.value) || 0);
+                                                setSelectedCity('custom'); // Switch to custom if edited manually
+                                            }}
+                                            className="w-full bg-transparent text-sm font-bold text-primary-800 outline-none"
+                                        />
+                                        <Percent className="w-3 h-3 text-primary-600" />
+                                    </div>
+                                    <div className="flex gap-2 mt-1">
+                                        <button 
+                                            onClick={() => { setIssRate(2); setSelectedCity('custom'); }}
+                                            className={`text-[9px] font-medium ${issRate === 2 ? 'text-primary-800 font-bold' : 'text-primary-400 hover:text-primary-600'}`}
+                                        >
+                                            Min (2%)
+                                        </button>
+                                        <button 
+                                            onClick={() => { setIssRate(5); setSelectedCity('custom'); }}
+                                            className={`text-[9px] font-medium ${issRate === 5 ? 'text-primary-800 font-bold' : 'text-primary-400 hover:text-primary-600'}`}
+                                        >
+                                            Max (5%)
+                                        </button>
+                                    </div>
+                                    {issRate > 5 && (
+                                        <p className="text-[10px] text-orange-600 mt-1 leading-tight font-medium">
+                                            Atenção: Teto ISS 5%.
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* City Selector */}
+                            <div className="pt-3 border-t border-gray-100">
+                                <label className="text-xs font-semibold text-gray-700 mb-2 block flex items-center gap-1">
+                                    <MapPin className="w-3 h-3 text-gray-400" />
+                                    Configuração Municipal (ISS)
+                                </label>
+                                <select 
+                                    value={selectedCity}
+                                    onChange={(e) => handleCityChange(e.target.value)}
+                                    className="w-full p-2 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-primary-500 outline-none bg-white"
+                                >
+                                    {cities.map(city => (
+                                        <option key={city.id} value={city.id}>
+                                            {city.name} {city.id !== 'custom' ? `(${city.rate}%)` : ''}
+                                        </option>
+                                    ))}
+                                </select>
+                                <p className="text-[10px] text-gray-400 mt-1">
+                                    Selecione seu município para preencher a alíquota automaticamente ou edite o valor acima.
+                                </p>
                             </div>
                          </div>
                      )}

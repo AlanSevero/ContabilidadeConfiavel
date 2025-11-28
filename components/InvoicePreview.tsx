@@ -1,5 +1,8 @@
+
 import React from 'react';
 import { Invoice } from '../types';
+import { Button } from './Button';
+import { Barcode } from 'lucide-react';
 
 interface Props {
   invoice: Invoice;
@@ -107,6 +110,22 @@ export const InvoicePreview: React.FC<Props> = ({ invoice }) => {
         </div>
       )}
       
+      {/* Boleto Simulator Button */}
+      <div className="mt-8 pt-6 border-t border-dashed border-gray-300 print:hidden">
+          <div className="bg-gray-50 p-4 rounded-lg flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                  <Barcode className="w-8 h-8 text-gray-600" />
+                  <div>
+                      <h4 className="font-bold text-gray-800">Boleto Bancário</h4>
+                      <p className="text-xs text-gray-500">Gere um boleto registrado para esta nota.</p>
+                  </div>
+              </div>
+              <Button size="sm" variant="secondary" onClick={() => alert('Boleto gerado e enviado para o cliente por email!')}>
+                  Gerar Boleto
+              </Button>
+          </div>
+      </div>
+
       <div className="mt-12 text-center text-xs text-gray-400">
         <p>Documento emitido para fins de demonstração pelo NotaSmart AI.</p>
       </div>

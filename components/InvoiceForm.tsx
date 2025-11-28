@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Invoice, InvoiceItem, InvoiceStatus, Client } from '../types';
 import { Button } from './Button';
@@ -326,7 +327,10 @@ export const InvoiceForm: React.FC<Props> = ({ userId, initialData, onSave, onCa
                                        min="0" 
                                        step="0.01" 
                                        value={item.unitPrice} 
-                                       onChange={e => updateItem(item.id, 'unitPrice', parseFloat(e.target.value))} 
+                                       onChange={e => {
+                                            const val = parseFloat(e.target.value);
+                                            updateItem(item.id, 'unitPrice', isNaN(val) ? 0 : val);
+                                       }}
                                    />
                                </div>
                            </div>

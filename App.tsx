@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, 
@@ -18,7 +19,11 @@ import {
   ChevronDown,
   ChevronRight,
   MessageCircle,
-  FolderOpen
+  FolderOpen,
+  Rocket,
+  FileCheck,
+  PieChart,
+  Package
 } from 'lucide-react';
 
 import { Dashboard } from './components/Dashboard';
@@ -34,6 +39,12 @@ import { SupportView } from './components/SupportView';
 import { DocumentsView } from './components/DocumentsView';
 import { PlansScreen } from './components/PlansScreen';
 import { TaxesView } from './components/TaxesView';
+import { CompanyOpeningView } from './components/CompanyOpeningView';
+import { PayrollView } from './components/PayrollView';
+import { ReportsView } from './components/ReportsView';
+import { ObligationsView } from './components/ObligationsView';
+import { FinancialView } from './components/FinancialView';
+import { TransactionsView } from './components/TransactionsView';
 
 import { Invoice, ViewState, User, Client, Partner, Accountant } from './types';
 import { getInvoices, saveInvoice, seedData, getClients, saveClient, deleteClient, getPartners, savePartner, deletePartner, getAssignedAccountant } from './services/storageService';
@@ -56,6 +67,7 @@ const App: React.FC = () => {
 
   // Sidebar Submenu State
   const [isPartnersMenuOpen, setIsPartnersMenuOpen] = useState(false);
+  const [isTaxesMenuOpen, setIsTaxesMenuOpen] = useState(false);
 
   // Check auth status on load
   useEffect(() => {
@@ -273,6 +285,13 @@ const App: React.FC = () => {
 
           <nav className="space-y-1">
             <SidebarItem 
+              icon={<Rocket className="w-5 h-5" />} 
+              label="Abrir Empresa" 
+              active={view === 'company_opening'} 
+              onClick={() => { setView('company_opening'); setIsSidebarOpen(false); }}
+            />
+
+            <SidebarItem 
               icon={<LayoutDashboard className="w-5 h-5" />} 
               label="Visão Geral" 
               active={view === 'dashboard'} 
@@ -280,18 +299,44 @@ const App: React.FC = () => {
             />
             
             <SidebarItem 
+              icon={<Package className="w-5 h-5" />} 
+              label="Gestão Financeira" 
+              active={view === 'financial'} 
+              onClick={() => { setView('financial'); setIsSidebarOpen(false); }}
+            />
+
+            <SidebarItem 
               icon={<FolderOpen className="w-5 h-5" />} 
-              label="Documentos & Impostos" 
+              label="Documentos" 
               active={view === 'documents'} 
               onClick={() => { setView('documents'); setIsSidebarOpen(false); }}
             />
 
-            <SidebarItem 
-              icon={<Scale className="w-5 h-5" />} 
-              label="Impostos a Pagar" 
-              active={view === 'taxes'} 
-              onClick={() => { setView('taxes'); setIsSidebarOpen(false); }}
-            />
+            {/* Taxes Accordion */}
+            <div className="space-y-1">
+              <SidebarItem 
+                icon={<Scale className="w-5 h-5" />} 
+                label="Gestão Fiscal" 
+                active={view === 'taxes' || view === 'obligations'} 
+                hasSubmenu={true}
+                isOpen={isTaxesMenuOpen}
+                onToggle={() => setIsTaxesMenuOpen(!isTaxesMenuOpen)}
+              />
+              {isTaxesMenuOpen && (
+                <div className="animate-fade-in-down">
+                  <SubmenuItem 
+                    label="Impostos a Pagar" 
+                    active={view === 'taxes'} 
+                    onClick={() => { setView('taxes'); setIsSidebarOpen(false); }}
+                  />
+                  <SubmenuItem 
+                    label="Obrigações (DCTF/SPED)" 
+                    active={view === 'obligations'} 
+                    onClick={() => { setView('obligations'); setIsSidebarOpen(false); }}
+                  />
+                </div>
+              )}
+            </div>
 
             <SidebarItem 
               icon={<FileText className="w-5 h-5" />} 
@@ -300,11 +345,11 @@ const App: React.FC = () => {
               onClick={() => { handleCreateInvoice(); setIsSidebarOpen(false); }}
             />
 
-             <SidebarItem 
-              icon={<BadgeDollarSign className="w-5 h-5" />} 
-              label="Cobranças" 
-              active={view === 'billing'} 
-              onClick={() => { setView('billing'); setIsSidebarOpen(false); }}
+            <SidebarItem 
+              icon={<PieChart className="w-5 h-5" />} 
+              label="Relatórios (DRE)" 
+              active={view === 'reports'} 
+              onClick={() => { setView('reports'); setIsSidebarOpen(false); }}
             />
 
             <SidebarItem 
@@ -314,38 +359,36 @@ const App: React.FC = () => {
               onClick={() => { setView('transactions'); setIsSidebarOpen(false); }}
             />
 
-            {/* Accordion Menu */}
+            {/* Partners & Payroll Accordion */}
             <div className="space-y-1">
               <SidebarItem 
-                icon={<Handshake className="w-5 h-5" />} 
-                label="Sócio e Pro-Labore" 
-                active={view === 'partners' || view === 'pro_labore'} 
+                icon={<UsersRound className="w-5 h-5" />} 
+                label="RH e Sócios" 
+                active={view === 'partners' || view === 'pro_labore' || view === 'payroll'} 
                 hasSubmenu={true}
                 isOpen={isPartnersMenuOpen}
                 onToggle={() => setIsPartnersMenuOpen(!isPartnersMenuOpen)}
               />
               {isPartnersMenuOpen && (
                 <div className="animate-fade-in-down">
+                   <SubmenuItem 
+                    label="Folha de Pagamento" 
+                    active={view === 'payroll'} 
+                    onClick={() => { setView('payroll'); setIsSidebarOpen(false); }}
+                  />
                   <SubmenuItem 
-                    label="Lista de Sócios" 
+                    label="Sócios" 
                     active={view === 'partners'} 
                     onClick={() => { setView('partners'); setIsSidebarOpen(false); }}
                   />
                   <SubmenuItem 
-                    label="Recibos Pro-Labore" 
+                    label="Pró-Labore" 
                     active={view === 'pro_labore'} 
                     onClick={() => { setView('pro_labore'); setIsSidebarOpen(false); }}
                   />
                 </div>
               )}
             </div>
-
-            <SidebarItem 
-              icon={<UsersRound className="w-5 h-5" />} 
-              label="Folha de Pagamento" 
-              active={view === 'payroll'} 
-              onClick={() => { setView('payroll'); setIsSidebarOpen(false); }}
-            />
 
             <SidebarItem 
               icon={<CalendarDays className="w-5 h-5" />} 
@@ -448,6 +491,12 @@ const App: React.FC = () => {
         )}
 
         {/* New Routes */}
+        
+        {view === 'company_opening' && <CompanyOpeningView />}
+        {view === 'reports' && <ReportsView />}
+        {view === 'obligations' && <ObligationsView />}
+        {view === 'payroll' && <PayrollView userId={user.id} />}
+        {view === 'financial' && <FinancialView userId={user.id} />}
 
         {view === 'partners' && (
            <PartnersList 
@@ -484,21 +533,7 @@ const App: React.FC = () => {
         )}
 
         {view === 'transactions' && (
-          <PlaceholderView 
-            title="Movimentação Financeira" 
-            description="Conciliação bancária e fluxo de caixa detalhado."
-            icon={ArrowRightLeft}
-            actionLabel="Enviar Extrato para Análise"
-          />
-        )}
-
-        {view === 'payroll' && (
-          <PlaceholderView 
-            title="Folha de Pagamento" 
-            description="Gestão de funcionários, holerites e obrigações trabalhistas."
-            icon={UsersRound}
-            actionLabel="Solicitar Admissão/Demissão"
-          />
+           <TransactionsView />
         )}
 
         {view === 'subscription' && (

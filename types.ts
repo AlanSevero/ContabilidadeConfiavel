@@ -1,3 +1,4 @@
+
 export enum InvoiceStatus {
   DRAFT = 'Rascunho',
   ISSUED = 'Emitida',
@@ -76,6 +77,40 @@ export interface Partner extends Entity {
   sharePercentage?: number;
 }
 
+export interface Employee {
+  id: string;
+  userId: string;
+  name: string;
+  role: string;
+  salary: number;
+  admissionDate: string;
+  status: 'active' | 'vacation' | 'terminated';
+}
+
+// --- New Inventory Types ---
+export interface Product {
+  id: string;
+  userId: string;
+  name: string;
+  sku: string; // Code
+  costPrice: number;
+  salePrice: number;
+  currentStock: number;
+  minStock: number;
+  category: string;
+}
+
+export interface ProductSale {
+  id: string;
+  userId: string;
+  productId: string;
+  productName: string;
+  quantity: number;
+  totalPrice: number;
+  date: string;
+}
+// ---------------------------
+
 export interface InvoiceItem {
   id: string;
   description: string;
@@ -104,12 +139,16 @@ export type ViewState =
   | 'clients' 
   | 'create_client' 
   | 'edit_client'
+  | 'financial'      // Novo: Gestão Financeira / Estoque
   | 'billing'        
-  | 'taxes'          
+  | 'taxes'
+  | 'obligations'
+  | 'reports'
+  | 'company_opening'
   | 'transactions'   
   | 'partners'       
   | 'pro_labore'     
   | 'payroll'        
   | 'subscription'
-  | 'documents'      // Novo: Central de Documentos
-  | 'support';       // Novo: Fale com o Contador
+  | 'documents'      
+  | 'support';

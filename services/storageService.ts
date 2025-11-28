@@ -1,8 +1,12 @@
-import { Invoice, InvoiceStatus, Client, Partner, Accountant, AccountingDocument, ChatMessage, PlanTier, User, TaxRegime } from '../types';
+
+import { Invoice, InvoiceStatus, Client, Partner, Accountant, AccountingDocument, ChatMessage, PlanTier, User, TaxRegime, Employee, Product, ProductSale } from '../types';
 
 const INVOICES_KEY = 'notas_fiscais_db_v1';
 const CLIENTS_KEY = 'notas_clients_db_v1';
 const PARTNERS_KEY = 'notas_partners_db_v1';
+const EMPLOYEES_KEY = 'notas_employees_db_v1';
+const PRODUCTS_KEY = 'notas_products_db_v1';
+const SALES_KEY = 'notas_sales_db_v1';
 const PLAN_KEY = 'notas_user_plan_v1';
 const DOCS_KEY = 'notas_docs_db_v1';
 
@@ -20,14 +24,12 @@ export const getAssignedAccountant = (): Accountant => {
 };
 
 // --- Documents ---
-// Now persisted in localStorage so generated taxes appear in DocumentsView
 export const getRecentDocuments = (): AccountingDocument[] => {
   const stored = localStorage.getItem(DOCS_KEY);
   if (stored) {
       return JSON.parse(stored);
   }
 
-  // Initial Seed
   const initialDocs: AccountingDocument[] = [
     { id: '1', title: 'DAS - Simples Nacional - Fev/2024', type: 'tax', date: '2024-02-20', status: 'pending', amount: 450.00 },
     { id: '2', title: 'Balancete 2023', type: 'report', date: '2024-01-15', status: 'received' },
@@ -39,7 +41,7 @@ export const getRecentDocuments = (): AccountingDocument[] => {
 
 export const saveDocument = (doc: AccountingDocument): void => {
     const docs = getRecentDocuments();
-    docs.unshift(doc); // Add to top
+    docs.unshift(doc); 
     localStorage.setItem(DOCS_KEY, JSON.stringify(docs));
 };
 
@@ -61,7 +63,6 @@ export const getUserPlan = (userId: string): PlanTier => {
 }
 
 // --- Invoices ---
-
 export const getInvoices = (userId: string): Invoice[] => {
   const data = localStorage.getItem(INVOICES_KEY);
   const allInvoices: Invoice[] = data ? JSON.parse(data) : [];
@@ -91,7 +92,6 @@ export const deleteInvoice = (id: string): void => {
 };
 
 // --- Clients ---
-
 export const getClients = (userId: string): Client[] => {
   const data = localStorage.getItem(CLIENTS_KEY);
   const allClients: Client[] = data ? JSON.parse(data) : [];
@@ -121,7 +121,6 @@ export const deleteClient = (id: string): void => {
 };
 
 // --- Partners ---
-
 export const getPartners = (userId: string): Partner[] => {
   const data = localStorage.getItem(PARTNERS_KEY);
   const allPartners: Partner[] = data ? JSON.parse(data) : [];
@@ -148,6 +147,78 @@ export const deletePartner = (id: string): void => {
   let allPartners: Partner[] = data ? JSON.parse(data) : [];
   allPartners = allPartners.filter(p => p.id !== id);
   localStorage.setItem(PARTNERS_KEY, JSON.stringify(allPartners));
+};
+
+// --- Employees ---
+export const getEmployees = (userId: string): Employee[] => {
+  const data = localStorage.getItem(EMPLOYEES_KEY);
+  const allEmployees: Employee[] = data ? JSON.parse(data) : [];
+  return allEmployees.filter(e => e.userId === userId);
+}
+
+export const saveEmployee = (employee: Employee): void => {
+  const data = localStorage.getItem(EMPLOYEES_KEY);
+  const allEmployees: Employee[] = data ? JSON.parse(data) : [];
+  
+  const existingIndex = allEmployees.findIndex(e => e.id === employee.id);
+  
+  if (existingIndex >= 0) {
+    allEmployees[existingIndex] = employee;
+  } else {
+    allEmployees.push(employee);
+  }
+  
+  localStorage.setItem(EMPLOYEES_KEY, JSON.stringify(allEmployees));
+}
+
+export const deleteEmployee = (id: string): void => {
+  const data = localStorage.getItem(EMPLOYEES_KEY);
+  let allEmployees: Employee[] = data ? JSON.parse(data) : [];
+  allEmployees = allEmployees.filter(e => e.id !== id);
+  localStorage.setItem(EMPLOYEES_KEY, JSON.stringify(allEmployees));
+}
+
+// --- Products (Financial/Inventory) ---
+export const getProducts = (userId: string): Product[] => {
+  const data = localStorage.getItem(PRODUCTS_KEY);
+  const allProducts: Product[] = data ? JSON.parse(data) : [];
+  return allProducts.filter(p => p.userId === userId);
+};
+
+export const saveProduct = (product: Product): void => {
+  const data = localStorage.getItem(PRODUCTS_KEY);
+  const allProducts: Product[] = data ? JSON.parse(data) : [];
+  
+  const existingIndex = allProducts.findIndex(p => p.id === product.id);
+  
+  if (existingIndex >= 0) {
+    allProducts[existingIndex] = product;
+  } else {
+    allProducts.push(product);
+  }
+  
+  localStorage.setItem(PRODUCTS_KEY, JSON.stringify(allProducts));
+};
+
+export const deleteProduct = (id: string): void => {
+  const data = localStorage.getItem(PRODUCTS_KEY);
+  let allProducts: Product[] = data ? JSON.parse(data) : [];
+  allProducts = allProducts.filter(p => p.id !== id);
+  localStorage.setItem(PRODUCTS_KEY, JSON.stringify(allProducts));
+};
+
+// --- Sales (Financial) ---
+export const getProductSales = (userId: string): ProductSale[] => {
+  const data = localStorage.getItem(SALES_KEY);
+  const allSales: ProductSale[] = data ? JSON.parse(data) : [];
+  return allSales.filter(s => s.userId === userId);
+};
+
+export const saveProductSale = (sale: ProductSale): void => {
+  const data = localStorage.getItem(SALES_KEY);
+  const allSales: ProductSale[] = data ? JSON.parse(data) : [];
+  allSales.push(sale); // Sales are always new entries
+  localStorage.setItem(SALES_KEY, JSON.stringify(allSales));
 };
 
 
@@ -194,5 +265,15 @@ export const seedData = (userId: string) => {
           notes: 'Cliente VIP'
       };
       saveClient(mockClient);
+  }
+
+  // Seed Products if none exist
+  if (getProducts(userId).length === 0) {
+    const products: Product[] = [
+      { id: crypto.randomUUID(), userId, name: 'Notebook Gamer', sku: 'NB-001', costPrice: 3500, salePrice: 5000, currentStock: 5, minStock: 2, category: 'Eletrônicos' },
+      { id: crypto.randomUUID(), userId, name: 'Mouse Sem Fio', sku: 'MS-002', costPrice: 40, salePrice: 90, currentStock: 20, minStock: 5, category: 'Acessórios' },
+      { id: crypto.randomUUID(), userId, name: 'Monitor 24"', sku: 'MN-003', costPrice: 600, salePrice: 950, currentStock: 1, minStock: 3, category: 'Eletrônicos' }, // Low stock example
+    ];
+    products.forEach(p => saveProduct(p));
   }
 };
