@@ -29,7 +29,6 @@ import {
 import { Dashboard } from './components/Dashboard';
 import { InvoiceForm } from './components/InvoiceForm';
 import { InvoicePreview } from './components/InvoicePreview';
-import { AuthScreen } from './components/AuthScreen';
 import { ClientList } from './components/ClientList';
 import { ClientForm } from './components/ClientForm';
 import { PlaceholderView } from './components/PlaceholderView';
@@ -48,11 +47,19 @@ import { TransactionsView } from './components/TransactionsView';
 
 import { Invoice, ViewState, User, Client, Partner, Accountant } from './types';
 import { getInvoices, saveInvoice, seedData, getClients, saveClient, deleteClient, getPartners, savePartner, deletePartner, getAssignedAccountant } from './services/storageService';
-import { getCurrentUser, logout } from './services/authService';
 import { Button } from './components/Button';
 
 const App: React.FC = () => {
-  const [user, setUser] = useState<User | null>(null);
+  // Default user for bypass login
+  const defaultUser: User = {
+    id: 'demo_user_01',
+    name: 'Empresa Exemplo Ltda',
+    email: 'contato@empresa.com',
+    password: '',
+    plan: 'standard'
+  };
+
+  const [user, setUser] = useState<User>(defaultUser);
   const [accountant, setAccountant] = useState<Accountant | null>(null);
   const [view, setView] = useState<ViewState>('dashboard');
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -69,44 +76,30 @@ const App: React.FC = () => {
   const [isPartnersMenuOpen, setIsPartnersMenuOpen] = useState(false);
   const [isTaxesMenuOpen, setIsTaxesMenuOpen] = useState(false);
 
-  // Check auth status on load
+  // Setup data on load
   useEffect(() => {
-    const currentUser = getCurrentUser();
-    if (currentUser) {
-      setUser(currentUser);
-      seedData(currentUser.id); // Ensure user has basic data
-      setAccountant(getAssignedAccountant());
-    }
+    // Seed data for the default user immediately
+    seedData(defaultUser.id);
+    setAccountant(getAssignedAccountant());
+    refreshData();
   }, []);
 
-  // Reload data when user or view changes
+  // Reload data when view changes
   useEffect(() => {
-    if (user) {
-      refreshData();
-    }
-  }, [user, view]);
+    refreshData();
+  }, [view]);
 
   const refreshData = () => {
-    if (user) {
-      setInvoices(getInvoices(user.id));
-      setClients(getClients(user.id));
-      setPartners(getPartners(user.id));
-    }
-  };
-
-  const handleLogin = (loggedInUser: User) => {
-    setUser(loggedInUser);
-    seedData(loggedInUser.id);
-    setAccountant(getAssignedAccountant());
-    setView('dashboard');
+    setInvoices(getInvoices(defaultUser.id));
+    setClients(getClients(defaultUser.id));
+    setPartners(getPartners(defaultUser.id));
   };
 
   const handleLogout = () => {
-    logout();
-    setUser(null);
-    setInvoices([]);
-    setClients([]);
-    setPartners([]);
+    // Since there is no login screen, logout effectively just resets the demo session or reloads
+    if(confirm('Deseja reiniciar a sessão de demonstração?')) {
+        window.location.reload();
+    }
   };
 
   // --- Invoice Handlers ---
@@ -210,10 +203,6 @@ const App: React.FC = () => {
       <span>{label}</span>
     </button>
   );
-
-  if (!user) {
-    return <AuthScreen onLogin={handleLogin} />;
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row font-sans">
@@ -421,7 +410,7 @@ const App: React.FC = () => {
                 className="w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors text-sm font-medium"
              >
                 <LogOut className="w-4 h-4" />
-                <span>Sair</span>
+                <span>Reiniciar Demo</span>
              </button>
         </div>
       </aside>
