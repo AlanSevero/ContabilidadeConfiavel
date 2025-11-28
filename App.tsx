@@ -21,7 +21,6 @@ import {
   MessageCircle,
   FolderOpen,
   Rocket,
-  FileCheck,
   PieChart,
   Package
 } from 'lucide-react';
@@ -44,22 +43,15 @@ import { ReportsView } from './components/ReportsView';
 import { ObligationsView } from './components/ObligationsView';
 import { FinancialView } from './components/FinancialView';
 import { TransactionsView } from './components/TransactionsView';
+import { AuthScreen } from './components/AuthScreen';
 
 import { Invoice, ViewState, User, Client, Partner, Accountant } from './types';
 import { getInvoices, saveInvoice, seedData, getClients, saveClient, deleteClient, getPartners, savePartner, deletePartner, getAssignedAccountant } from './services/storageService';
+import { getCurrentUser, logout } from './services/authService';
 import { Button } from './components/Button';
 
 const App: React.FC = () => {
-  // Default user for bypass login
-  const defaultUser: User = {
-    id: 'demo_user_01',
-    name: 'Empresa Exemplo Ltda',
-    email: 'contato@empresa.com',
-    password: '',
-    plan: 'standard'
-  };
-
-  const [user, setUser] = useState<User>(defaultUser);
+  const [user, setUser] = useState<User | null>(null);
   const [accountant, setAccountant] = useState<Accountant | null>(null);
   const [view, setView] = useState<ViewState>('dashboard');
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -78,34 +70,43 @@ const App: React.FC = () => {
 
   // Setup data on load
   useEffect(() => {
-    // Seed data for the default user immediately
-    seedData(defaultUser.id);
-    setAccountant(getAssignedAccountant());
-    refreshData();
+    const sessionUser = getCurrentUser();
+    if (sessionUser) {
+      handleLoginSuccess(sessionUser);
+    }
   }, []);
 
   // Reload data when view changes
   useEffect(() => {
-    refreshData();
-  }, [view]);
+    if (user) {
+      refreshData(user.id);
+    }
+  }, [view, user]);
 
-  const refreshData = () => {
-    setInvoices(getInvoices(defaultUser.id));
-    setClients(getClients(defaultUser.id));
-    setPartners(getPartners(defaultUser.id));
+  const handleLoginSuccess = (loggedInUser: User) => {
+    setUser(loggedInUser);
+    seedData(loggedInUser.id);
+    setAccountant(getAssignedAccountant());
+    refreshData(loggedInUser.id);
+    setView('dashboard');
+  };
+
+  const refreshData = (userId: string) => {
+    setInvoices(getInvoices(userId));
+    setClients(getClients(userId));
+    setPartners(getPartners(userId));
   };
 
   const handleLogout = () => {
-    // Since there is no login screen, logout effectively just resets the demo session or reloads
-    if(confirm('Deseja reiniciar a sessão de demonstração?')) {
-        window.location.reload();
-    }
+    logout();
+    setUser(null);
+    window.location.reload();
   };
 
   // --- Invoice Handlers ---
   const handleSaveInvoice = (invoice: Invoice) => {
     saveInvoice(invoice);
-    refreshData();
+    if(user) refreshData(user.id);
     setView('dashboard');
   };
 
@@ -132,14 +133,14 @@ const App: React.FC = () => {
   // --- Client Handlers ---
   const handleSaveClient = (client: Client) => {
     saveClient(client);
-    refreshData();
+    if(user) refreshData(user.id);
     setView('clients');
   };
 
   const handleDeleteClient = (id: string) => {
     if (confirm('Tem certeza que deseja excluir este cliente?')) {
         deleteClient(id);
-        refreshData();
+        if(user) refreshData(user.id);
     }
   };
 
@@ -156,14 +157,14 @@ const App: React.FC = () => {
   // --- Partner Handlers ---
   const handleSavePartner = (partner: Partner) => {
     savePartner(partner);
-    refreshData();
+    if(user) refreshData(user.id);
     setView('partners');
   };
 
   const handleDeletePartner = (id: string) => {
     if (confirm('Tem certeza que deseja excluir este sócio?')) {
         deletePartner(id);
-        refreshData();
+        if(user) refreshData(user.id);
     }
   };
 
@@ -203,6 +204,11 @@ const App: React.FC = () => {
       <span>{label}</span>
     </button>
   );
+
+  // --- Render Auth Screen if not logged in ---
+  if (!user) {
+    return <AuthScreen onLogin={handleLoginSuccess} />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row font-sans">
@@ -410,7 +416,7 @@ const App: React.FC = () => {
                 className="w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors text-sm font-medium"
              >
                 <LogOut className="w-4 h-4" />
-                <span>Reiniciar Demo</span>
+                <span>Sair</span>
              </button>
         </div>
       </aside>
